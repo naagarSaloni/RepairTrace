@@ -1,7 +1,13 @@
-venv/
+.env
+.env.*
+!.env.example
+
 __pycache__/
 *.pyc
-.env
-.pytest_cache/
-.vscode/
+
 node_modules/
+
+.venv/
+venv/
+
+uploads/

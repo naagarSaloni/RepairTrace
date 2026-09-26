@@ -1,4 +1,6 @@
+import os
 import uuid
+import qrcode
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -27,6 +29,25 @@ def create_product(
 ):
     product_uid = f"PRD-{uuid.uuid4().hex[:10].upper()}"
 
+    # Create QR code containing the public verification URL
+    verification_url = (
+        f"http://127.0.0.1:8000/api/public/products/{product_uid}"
+    )
+
+    qr = qrcode.make(verification_url)
+
+    # QR folder
+    qr_folder = "uploads/qr"
+    os.makedirs(qr_folder, exist_ok=True)
+
+    # QR file name
+    qr_filename = f"{product_uid}.png"
+    qr_path = os.path.join(qr_folder, qr_filename)
+
+    # Save QR image
+    qr.save(qr_path)
+
+    # Create product
     product = Product(
         product_uid=product_uid,
         owner_id=current_user.id,
@@ -34,6 +55,7 @@ def create_product(
         brand=request.brand,
         model=request.model,
         serial_number=request.serial_number,
+        qr_code=f"/uploads/qr/{qr_filename}"
     )
 
     db.add(product)

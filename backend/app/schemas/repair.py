@@ -15,6 +15,7 @@ class RepairResponse(BaseModel):
     issue_description: str
     diagnosis: str | None
     status: str
+    record_hash: str | None
     blockchain_tx_hash: str | None
 
     class Config:

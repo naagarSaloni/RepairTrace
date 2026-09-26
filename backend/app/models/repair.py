@@ -56,6 +56,7 @@ class Repair(Base):
             "IN_REPAIR",
             "PART_REPLACED",
             "COMPLETED",
+            "CUSTOMER_VERIFIED",
             "RETURNED",
             "CANCELLED",
             name="repair_status"
@@ -65,6 +66,11 @@ class Repair(Base):
     )
 
     blockchain_tx_hash: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+
+    record_hash: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True
     )
