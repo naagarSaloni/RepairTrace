@@ -1,0 +1,10 @@
+export type Role = 'CUSTOMER' | 'TECHNICIAN' | 'ADMIN'
+export type TokenResponse = { access_token: string; token_type: string }
+export type UserSession = { token: string; role: Role; email: string; name?: string }
+export type Product = { id:number; product_uid:string; owner_id:number; product_name:string; brand?:string|null; model?:string|null; serial_number?:string|null; qr_code?:string|null }
+export type Repair = { id:number; repair_id:string; product_id:number; customer_id:number; technician_id?:number|null; issue_description:string; diagnosis?:string|null; status:string; record_hash?:string|null; blockchain_tx_hash?:string|null; created_at?:string; updated_at?:string }
+export type History = { id:number; repair_id:number; status:string; description?:string|null; blockchain_tx_hash?:string|null; created_at?:string }
+export type Part = { id:number; repair_id:number; part_name:string; old_part_serial?:string|null; new_part_serial?:string|null; warranty_months:number; blockchain_tx_hash?:string|null; replaced_at?:string }
+export type Document = { id:number; repair_id:number; document_type:string; file_name:string; file_url:string; description?:string|null; uploaded_by:number; created_at?:string }
+export type Technician = { id:number; name:string; email:string }
+export type PublicProduct = { verified:boolean; product_uid:string; product_name:string; brand?:string|null; model?:string|null; serial_number?:string|null; message:string }
