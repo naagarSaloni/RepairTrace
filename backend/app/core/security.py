@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from jose import jwt
-from passlib.context import CryptContext
 
 from app.core.config import (
     SECRET_KEY,
@@ -10,23 +10,33 @@ from app.core.config import (
 )
 
 
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto"
-)
-
-
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    password_bytes = password.encode("utf-8")
+
+    if len(password_bytes) > 72:
+        raise ValueError("Password cannot be longer than 72 bytes.")
+
+    hashed = bcrypt.hashpw(
+        password_bytes,
+        bcrypt.gensalt()
+    )
+
+    return hashed.decode("utf-8")
 
 
 def verify_password(
     plain_password: str,
     hashed_password: str
 ) -> bool:
-    return pwd_context.verify(
-        plain_password,
-        hashed_password
+    password_bytes = plain_password.encode("utf-8")
+    hashed_bytes = hashed_password.encode("utf-8")
+
+    if len(password_bytes) > 72:
+        return False
+
+    return bcrypt.checkpw(
+        password_bytes,
+        hashed_bytes
     )
 
 
