@@ -1,0 +1,698 @@
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ClipboardCheck,
+  FileText,
+  Laptop,
+  Package,
+  Plus,
+  QrCode,
+  ShieldCheck,
+  Wrench,
+} from "lucide-react";
+import { productsApi, repairsApi } from "../api/services";
+import { assetUrl, errorMessage } from "../api/client";
+import type { Product, Repair, History } from "../types";
+import {
+  Badge,
+  Button,
+  Card,
+  Empty,
+  ErrorBox,
+  SectionTitle,
+  Stat,
+  Timeline,
+} from "../components/ui";
+
+export function CustomerDashboard() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [repairs, setRepairs] = useState<Repair[]>([]);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    Promise.all([productsApi.list(), repairsApi.listMine()])
+      .then(([p, r]) => {
+        setProducts(p.data);
+        setRepairs(r.data);
+      })
+      .catch((e) => setError(errorMessage(e)));
+  }, []);
+  const active = repairs.filter(
+    (r) => !["RETURNED", "CANCELLED"].includes(r.status),
+  ).length;
+  return (
+    <>
+      <SectionTitle
+        eyebrow="CUSTOMER DASHBOARD"
+        title="Your repair history, in one place."
+        description="Track products, active repairs and verification from a single workspace."
+        action={
+          <Link className="btn btn-primary" to="/customer/products/new">
+            <Plus size={17} /> Add product
+          </Link>
+        }
+      />
+      {error && <ErrorBox message={error} />}
+      <div className="stats-grid">
+        <Stat icon={Laptop} label="Products" value={products.length} />
+        <Stat icon={Wrench} label="Active repairs" value={active} />
+        <Stat
+          icon={ClipboardCheck}
+          label="Completed"
+          value={
+            repairs.filter(
+              (r) =>
+                r.status === "COMPLETED" || r.status === "CUSTOMER_VERIFIED",
+            ).length
+          }
+        />
+        <Stat
+          icon={ShieldCheck}
+          label="Returned"
+          value={repairs.filter((r) => r.status === "RETURNED").length}
+        />
+      </div>
+      <div className="dashboard-grid">
+        <Card>
+          <div className="card-heading">
+            <div>
+              <span className="eyebrow">RECENT</span>
+              <h2>Repairs</h2>
+            </div>
+            <Link to="/customer/repairs">
+              View all <ArrowRight size={15} />
+            </Link>
+          </div>
+          {repairs.length ? (
+            <div className="list">
+              {repairs.slice(0, 4).map((r) => (
+                <RepairRow key={r.id} repair={r} />
+              ))}
+            </div>
+          ) : (
+            <Empty
+              title="No repairs yet"
+              description="Create your first repair request from a registered product."
+              action={
+                <Link className="btn btn-secondary" to="/customer/products">
+                  View products
+                </Link>
+              }
+            />
+          )}
+        </Card>
+        <Card>
+          <div className="card-heading">
+            <div>
+              <span className="eyebrow">PRODUCTS</span>
+              <h2>Your products</h2>
+            </div>
+            <Link to="/customer/products">
+              View all <ArrowRight size={15} />
+            </Link>
+          </div>
+          {products.length ? (
+            <div className="product-mini-list">
+              {products.slice(0, 4).map((p) => (
+                <Link
+                  key={p.id}
+                  to={`/customer/products/${p.product_uid}`}
+                  className="product-mini"
+                >
+                  <div className="product-icon">
+                    <Laptop size={18} />
+                  </div>
+                  <div>
+                    <b>{p.product_name}</b>
+                    <small>
+                      {p.brand || "Product"} · {p.product_uid}
+                    </small>
+                  </div>
+                  <ArrowRight size={16} />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <Empty
+              title="No products"
+              description="Register a product to start tracking its repair history."
+              action={
+                <Link className="btn btn-secondary" to="/customer/products/new">
+                  Add product
+                </Link>
+              }
+            />
+          )}
+        </Card>
+      </div>
+    </>
+  );
+}
+function RepairRow({ repair }: { repair: Repair }) {
+  return (
+    <Link className="list-row" to={`/customer/repairs/${repair.repair_id}`}>
+      <div className="row-icon">
+        <Wrench size={17} />
+      </div>
+      <div className="grow">
+        <b>{repair.repair_id}</b>
+        <span>{repair.issue_description}</span>
+      </div>
+      <Badge status={repair.status} />
+      <ArrowRight size={16} />
+    </Link>
+  );
+}
+
+export function Products() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [error, setError] = useState("");
+  const load = () =>
+    productsApi
+      .list()
+      .then((r) => setProducts(r.data))
+      .catch((e) => setError(errorMessage(e)));
+  useEffect(() => {
+  load();
+}, []);
+  return (
+    <>
+      <SectionTitle
+        eyebrow="PRODUCTS"
+        title="My products"
+        description="Registered products and their RepairTrace identity."
+        action={
+          <Link className="btn btn-primary" to="/customer/products/new">
+            <Plus size={17} /> Register product
+          </Link>
+        }
+      />
+      {error && <ErrorBox message={error} onRetry={load} />}{" "}
+      {products.length ? (
+        <div className="product-grid">
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <Empty
+            title="No products registered"
+            description="Add your first product to generate its unique RepairTrace ID and QR code."
+            action={
+              <Link className="btn btn-primary" to="/customer/products/new">
+                Register product
+              </Link>
+            }
+          />
+        </Card>
+      )}
+    </>
+  );
+}
+function ProductCard({ product }: { product: Product }) {
+  return (
+    <Card className="product-card">
+      <div className="product-card-top">
+        <div className="product-icon large">
+          <Laptop />
+        </div>
+        <span className="verified-dot">
+          <ShieldCheck size={15} /> Registered
+        </span>
+      </div>
+      <h3>{product.product_name}</h3>
+      <p>
+        {[product.brand, product.model].filter(Boolean).join(" · ") ||
+          "Product details"}
+      </p>
+      <code>{product.product_uid}</code>
+      <div className="product-actions">
+        <Link
+          className="btn btn-secondary"
+          to={`/customer/products/${product.product_uid}`}
+        >
+          View
+        </Link>
+        {product.qr_code && (
+          <a
+            className="btn btn-ghost"
+            href={assetUrl(product.qr_code)}
+            target="_blank"
+          >
+            <QrCode size={16} /> QR
+          </a>
+        )}
+        <Link
+          className="btn btn-primary"
+          to={`/customer/repairs/new?product=${product.id}`}
+        >
+          Repair <ArrowRight size={15} />
+        </Link>
+      </div>
+    </Card>
+  );
+}
+
+export function NewProduct() {
+  const nav = useNavigate();
+  const [form, setForm] = useState({
+    product_name: "",
+    brand: "",
+    model: "",
+    serial_number: "",
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const p = await productsApi.create(form);
+      nav(`/customer/products/${p.data.product_uid}`);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <SectionTitle
+        eyebrow="NEW PRODUCT"
+        title="Register a product"
+        description="Create its unique RepairTrace identity and QR verification code."
+      />
+      <Card className="form-card">
+        <form onSubmit={submit} className="form-grid">
+          {error && <div className="form-error full-span">{error}</div>}
+          <label className="full-span">
+            Product name
+            <input
+              required
+              value={form.product_name}
+              onChange={(e) =>
+                setForm({ ...form, product_name: e.target.value })
+              }
+              placeholder="MacBook Pro 14-inch"
+            />
+          </label>
+          <label>
+            Brand
+            <input
+              value={form.brand}
+              onChange={(e) => setForm({ ...form, brand: e.target.value })}
+              placeholder="Apple"
+            />
+          </label>
+          <label>
+            Model
+            <input
+              value={form.model}
+              onChange={(e) => setForm({ ...form, model: e.target.value })}
+              placeholder="A2442"
+            />
+          </label>
+          <label className="full-span">
+            Serial number
+            <input
+              value={form.serial_number}
+              onChange={(e) =>
+                setForm({ ...form, serial_number: e.target.value })
+              }
+              placeholder="Optional serial number"
+            />
+          </label>
+          <div className="form-actions full-span">
+            <Link className="btn btn-secondary" to="/customer/products">
+              Cancel
+            </Link>
+            <Button type="submit" loading={busy}>
+              Register product
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </>
+  );
+}
+
+export function ProductDetails() {
+  const { productUid } = useParams();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (productUid)
+      productsApi
+        .get(productUid)
+        .then((r) => setProduct(r.data))
+        .catch((e) => setError(errorMessage(e)));
+  }, [productUid]);
+  if (error) return <ErrorBox message={error} />;
+  if (!product) return <div className="loading-page">Loading product…</div>;
+  return (
+    <>
+      <Link className="back-link" to="/customer/products">
+        <ArrowLeft size={16} /> Back to products
+      </Link>
+      <SectionTitle
+        eyebrow="PRODUCT PASSPORT"
+        title={product.product_name}
+        description={`${product.brand || ""} ${product.model || ""}`}
+      />
+      <div className="detail-grid">
+        <Card>
+          <div className="product-hero">
+            <div className="product-icon huge">
+              <Laptop />
+            </div>
+            <div>
+              <span className="verified-dot">
+                <ShieldCheck size={15} /> Registered
+              </span>
+              <h2>{product.product_name}</h2>
+              <p>
+                {product.brand || "—"} · {product.model || "—"}
+              </p>
+              <code>{product.product_uid}</code>
+            </div>
+          </div>
+          <div className="info-grid">
+            <div>
+              <small>Serial number</small>
+              <b>{product.serial_number || "Not provided"}</b>
+            </div>
+            <div>
+              <small>Product ID</small>
+              <b>{product.product_uid}</b>
+            </div>
+          </div>
+          <div className="form-actions">
+            <Link
+              className="btn btn-primary"
+              to={`/customer/repairs/new?product=${product.id}`}
+            >
+              <Wrench size={16} /> Create repair
+            </Link>
+            <Link
+              className="btn btn-secondary"
+              to={`/verify?uid=${product.product_uid}`}
+            >
+              Public verify
+            </Link>
+          </div>
+        </Card>
+        <Card className="qr-card">
+          <span className="eyebrow">QR VERIFICATION</span>
+          <h3>Product QR</h3>
+          {product.qr_code ? (
+            <>
+              <img src={assetUrl(product.qr_code)} alt="Product QR" />
+              <a
+                className="btn btn-secondary"
+                href={assetUrl(product.qr_code)}
+                target="_blank"
+              >
+                Open QR image
+              </a>
+            </>
+          ) : (
+            <p>QR not available.</p>
+          )}
+        </Card>
+      </div>
+    </>
+  );
+}
+
+export function NewRepair() {
+  const nav = useNavigate();
+  const params = new URLSearchParams(location.search);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productId, setProductId] = useState(params.get("product") || "");
+  const [issue, setIssue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    productsApi
+      .list()
+      .then((r) => setProducts(r.data))
+      .catch((e) => setError(errorMessage(e)));
+  }, []);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const r = await repairsApi.create({
+        product_id: Number(productId),
+        issue_description: issue,
+      });
+      nav(`/customer/repairs/${r.data.repair_id}`);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <Link className="back-link" to="/customer/repairs">
+        <ArrowLeft size={16} /> Back to repairs
+      </Link>
+      <SectionTitle
+        eyebrow="NEW REPAIR"
+        title="Create a repair request"
+        description="Tell the repair centre what needs attention."
+      />
+      <Card className="form-card">
+        <form onSubmit={submit} className="form-grid">
+          {error && <div className="form-error full-span">{error}</div>}
+          <label className="full-span">
+            Product
+            <select
+              required
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+            >
+              <option value="">Select a product</option>
+              {products.map((p) => (
+                <option value={p.id} key={p.id}>
+                  {p.product_name} · {p.product_uid}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="full-span">
+            Issue description
+            <textarea
+              required
+              minLength={5}
+              value={issue}
+              onChange={(e) => setIssue(e.target.value)}
+              placeholder="Describe the problem, symptoms, or damage…"
+            />
+          </label>
+          <div className="form-actions full-span">
+            <Button type="submit" loading={busy}>
+              Submit repair request
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </>
+  );
+}
+
+export function Repairs() {
+  const [repairs, setRepairs] = useState<Repair[]>([]);
+  const [error, setError] = useState("");
+  const load = () =>
+    repairsApi
+      .listMine()
+      .then((r) => setRepairs(r.data))
+      .catch((e) => setError(errorMessage(e)));
+  useEffect(() => {
+  load();
+}, []);
+  return (
+    <>
+      <SectionTitle
+        eyebrow="REPAIRS"
+        title="My repairs"
+        description="Follow every repair request from submission to return."
+        action={
+          <Link className="btn btn-primary" to="/customer/repairs/new">
+            <Plus size={17} /> New repair
+          </Link>
+        }
+      />
+      {error && <ErrorBox message={error} onRetry={load} />}
+      <div className="repair-list">
+        {repairs.map((r) => (
+          <RepairRow key={r.id} repair={r} />
+        ))}
+      </div>
+      {!repairs.length && !error && (
+        <Card>
+          <Empty
+            title="No repair requests"
+            description="Choose a product and submit a repair request to get started."
+            action={
+              <Link className="btn btn-primary" to="/customer/products">
+                View products
+              </Link>
+            }
+          />
+        </Card>
+      )}
+    </>
+  );
+}
+
+export function RepairDetails() {
+  const { repairId } = useParams();
+  const [repair, setRepair] = useState<Repair | null>(null);
+  const [history, setHistory] = useState<History[]>([]);
+  const [hash, setHash] = useState<any>(null);
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const load = () => {
+    if (!repairId) return;
+    setError("");
+    Promise.all([repairsApi.get(repairId), repairsApi.history(repairId)])
+      .then(([r, h]) => {
+        setRepair(r.data);
+        setHistory(h.data);
+      })
+      .catch((e) => setError(errorMessage(e)));
+  };
+  useEffect(load, [repairId]);
+  const action = async (kind: "verify" | "return" | "hash") => {
+    if (!repairId) return;
+    setBusy(kind);
+    setError("");
+    try {
+      if (kind === "verify") await repairsApi.verify(repairId);
+      if (kind === "return") await repairsApi.returnRepair(repairId);
+      if (kind === "hash")
+        setHash((await repairsApi.verifyHash(repairId)).data);
+      load();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy("");
+    }
+  };
+  if (error && !repair) return <ErrorBox message={error} onRetry={load} />;
+  if (!repair) return <div className="loading-page">Loading repair…</div>;
+  return (
+    <>
+      <Link className="back-link" to="/customer/repairs">
+        <ArrowLeft size={16} /> Back to repairs
+      </Link>
+      <SectionTitle
+        eyebrow="REPAIR TRACKING"
+        title={repair.repair_id}
+        description={repair.issue_description}
+        action={<Badge status={repair.status} />}
+      />
+      <div className="detail-grid">
+        <div className="stack">
+          <Card>
+            <div className="card-heading">
+              <div>
+                <span className="eyebrow">LIFECYCLE</span>
+                <h2>Repair timeline</h2>
+              </div>
+            </div>
+            <Timeline history={history} />
+          </Card>
+          <Card>
+            <div className="card-heading">
+              <div>
+                <span className="eyebrow">DIAGNOSIS</span>
+                <h2>Technician notes</h2>
+              </div>
+            </div>
+            <p className="prose">
+              {repair.diagnosis || "Diagnosis has not been recorded yet."}
+            </p>
+          </Card>
+        </div>
+        <div className="stack">
+          <Card>
+            <span className="eyebrow">INTEGRITY</span>
+            <h2>Record verification</h2>
+            <p>
+              RepairTrace currently verifies the stored repair record with
+              SHA-256. Blockchain transaction verification can be added later.
+            </p>
+            <Button
+              variant="secondary"
+              loading={busy === "hash"}
+              onClick={() => action("hash")}
+            >
+              <ShieldCheck size={16} /> Verify record hash
+            </Button>
+            {hash && (
+              <div
+                className={`verification-chip ${hash.hash_valid ? "valid" : "invalid"}`}
+              >
+                <ShieldCheck size={17} />
+                <div>
+                  <b>
+                    {hash.hash_valid ? "Record verified" : "Record changed"}
+                  </b>
+                  <small>{hash.stored_hash}</small>
+                </div>
+              </div>
+            )}
+            {repair.blockchain_tx_hash && (
+              <div className="tx">
+                <small>Blockchain transaction</small>
+                <code>{repair.blockchain_tx_hash}</code>
+              </div>
+            )}
+          </Card>
+          <Card>
+            <span className="eyebrow">NEXT STEP</span>
+            <h2>Customer action</h2>
+            {repair.status === "COMPLETED" && (
+              <Button
+                loading={busy === "verify"}
+                onClick={() => action("verify")}
+              >
+                <ClipboardCheck size={16} /> Verify completed repair
+              </Button>
+            )}
+            {repair.status === "CUSTOMER_VERIFIED" && (
+              <Button
+                loading={busy === "return"}
+                onClick={() => action("return")}
+              >
+                <Package size={16} /> Confirm product returned
+              </Button>
+            )}
+            {repair.status === "RETURNED" && (
+              <div className="success-message">
+                <ShieldCheck size={18} /> Repair closed and returned.
+              </div>
+            )}
+            {!["COMPLETED", "CUSTOMER_VERIFIED", "RETURNED"].includes(
+              repair.status,
+            ) && (
+              <p className="muted">
+                Your action will appear here when the technician completes the
+                repair.
+              </p>
+            )}
+          </Card>
+          {error && <ErrorBox message={error} />}
+        </div>
+      </div>
+    </>
+  );
+}
