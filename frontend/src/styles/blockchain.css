@@ -1,0 +1,42 @@
+/* Extra styles for the blockchain add-on pages. Uses the same CSS variables as styles.css. */
+.bc-meter{--v:0;--c:var(--green);width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--v)*1%),var(--line) 0);flex:none}
+.bc-meter>div{width:72px;height:72px;border-radius:50%;background:#fff;display:grid;place-items:center;text-align:center}
+.bc-meter b{font-family:Manrope;font-size:22px;line-height:1}
+.bc-meter small{display:block;font-size:9px;color:var(--muted);letter-spacing:.08em;font-weight:800}
+.bc-meter.medium{--c:#d99a1e}.bc-meter.high{--c:var(--red)}
+.bc-pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.03em;padding:5px 9px;border-radius:999px;white-space:nowrap}
+.bc-pill.good{background:var(--greenbg);color:var(--green)}.bc-pill.warn{background:var(--amberbg);color:var(--amber)}.bc-pill.bad{background:var(--redbg);color:var(--red)}.bc-pill.neutral{background:#eef3ff;color:#3156c8}
+.bc-flags{display:grid;gap:8px;margin:14px 0 0;padding:0;list-style:none}
+.bc-flags li{display:flex;gap:9px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:var(--amberbg);color:var(--amber);font-size:12px;font-weight:600}
+.bc-flags li.high{background:var(--redbg);color:var(--red)}
+.bc-flags li span{display:block;font-weight:500;margin-top:2px;opacity:.9}
+.bc-flags.clear li{background:var(--greenbg);color:var(--green)}
+.bc-head{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.bc-head .grow{flex:1;min-width:200px}
+.bc-head h2{font-family:Manrope;margin:2px 0 4px}
+.bc-counts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px}
+.bc-counts>div{padding:12px;border:1px solid var(--line);border-radius:10px}
+.bc-counts b{font-family:Manrope;font-size:20px;display:block}.bc-counts small{font-size:10px;color:#8993a3}
+.bc-repair{border:1px solid var(--line);border-radius:12px;background:#fff;margin-top:12px;overflow:hidden}
+.bc-repair>summary{list-style:none;cursor:pointer;display:flex;gap:12px;align-items:center;padding:14px 16px}
+.bc-repair>summary::-webkit-details-marker{display:none}
+.bc-repair>summary .grow{flex:1;min-width:0}.bc-repair>summary .grow span{display:block;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bc-repair[open]>summary{border-bottom:1px solid var(--line);background:#fafbfe}
+.bc-body{padding:16px;display:grid;gap:16px}
+.bc-body h4{margin:0 0 8px;font-size:12px;letter-spacing:.08em;color:#778297}
+.bc-hash{font-size:10px;color:#677286;background:#f7f8fb;border:1px solid var(--line);padding:6px 8px;border-radius:6px;display:block;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace}
+.bc-kv{display:grid;gap:4px}.bc-kv small{font-size:10px;color:#8993a3}
+.bc-doc{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.bc-doc:first-of-type{border-top:0}.bc-doc .grow{flex:1;min-width:0}.bc-doc b{font-size:13px}.bc-doc span{display:block;font-size:11px;color:var(--muted)}
+.bc-table{width:100%;border-collapse:collapse;font-size:12px}
+.bc-table th{text-align:left;font-size:10px;letter-spacing:.08em;color:#778297;padding:8px;border-bottom:1px solid var(--line)}
+.bc-table td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.bc-scroll{overflow-x:auto}
+.bc-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bc-actions .btn{padding:8px 12px;font-size:12px}
+.bc-note{border:1px dashed var(--line);border-radius:10px;padding:11px 13px;font-size:12px;color:var(--muted);background:#fafbfe}
+.bc-select-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.bc-select-row select{flex:1;min-width:220px}
+.bc-reco{padding:14px 16px;border-radius:12px;font-size:13px;font-weight:600;display:flex;gap:10px;align-items:flex-start}
+.bc-reco.good{background:var(--greenbg);color:var(--green)}.bc-reco.warn{background:var(--amberbg);color:var(--amber)}
+@media(max-width:700px){.bc-counts{grid-template-columns:1fr 1fr}.bc-head{align-items:flex-start}}
